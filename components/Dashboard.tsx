@@ -3,6 +3,7 @@ import { TrackedProduct } from '../types';
 import { Camera, TrendingUp, DollarSign, Calendar, Trash2, Settings } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CURRENCIES, getCurrencyByCode } from '../data/currencies';
+import { formatPrice } from '../utils/formatters';
 
 interface DashboardProps {
   items: TrackedProduct[];
@@ -79,7 +80,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-gray-400 text-sm font-medium mb-1">Total Tracked Value</p>
               <h2 className="text-4xl font-bold text-white">
-                {currentCurrency.symbol}{totalValue.toFixed(2)}
+                {currentCurrency.symbol}{formatPrice(totalValue)}
               </h2>
             </div>
             <div className="p-3 bg-accent/10 rounded-xl">
@@ -152,7 +153,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start">
                     <h4 className="font-semibold text-white truncate pr-2">{item.name}</h4>
-                    <span className="text-success font-bold whitespace-nowrap">{item.currency}{item.price.toFixed(2)}</span>
+                    <span className="text-success font-bold whitespace-nowrap">
+                      {item.currency}{formatPrice(item.price)}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs bg-white/5 text-gray-400 px-2 py-0.5 rounded text-nowrap">
