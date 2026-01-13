@@ -5,7 +5,7 @@ const parseBase64 = (base64Data: string) => {
   return base64Data.split(',')[1] || base64Data;
 };
 
-export const analyzeImage = async (base64Image: string): Promise<AnalysisResult> => {
+export const analyzeImage = async (base64Image: string, currencyHint: string = '$'): Promise<AnalysisResult> => {
   if (!process.env.API_KEY) {
     throw new Error("API Key not found");
   }
@@ -26,7 +26,7 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
       },
       currency: {
         type: Type.STRING,
-        description: "The currency symbol (e.g., $, €, £). Default to $ if unknown.",
+        description: `The currency symbol (e.g., $, €, £, ¥). Default to ${currencyHint} if unknown or not visible.`,
       },
       category: {
         type: Type.STRING,
@@ -52,7 +52,7 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
             },
           },
           {
-            text: "Analyze this product image. Identify the product name. Look specifically for a price tag or label. If a price tag is clearly visible, extract that price. If not, provide a realistic estimated market price. Return the data in JSON format.",
+            text: `Analyze this product image. Identify the product name. Look specifically for a price tag or label. If a price tag is clearly visible, extract that price. If not, provide a realistic estimated market price. Return the data in JSON format. If the currency symbol is not clearly visible on the tag, use '${currencyHint}' as the currency.`,
           },
         ],
       },

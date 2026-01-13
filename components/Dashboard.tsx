@@ -1,16 +1,27 @@
 import React, { useMemo } from 'react';
 import { TrackedProduct } from '../types';
-import { Camera, TrendingUp, DollarSign, Calendar, Trash2 } from 'lucide-react';
+import { Camera, TrendingUp, DollarSign, Calendar, Trash2, Settings } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { CURRENCIES, getCurrencyByCode } from '../data/currencies';
 
 interface DashboardProps {
   items: TrackedProduct[];
   onOpenCamera: () => void;
   onDeleteItem: (id: string) => void;
+  preferredCurrency: string;
+  onCurrencyChange: (currencyCode: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ items, onOpenCamera, onDeleteItem }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ 
+  items, 
+  onOpenCamera, 
+  onDeleteItem,
+  preferredCurrency,
+  onCurrencyChange
+}) => {
   
+  const currentCurrency = getCurrencyByCode(preferredCurrency);
+
   const totalValue = useMemo(() => {
     return items.reduce((acc, item) => acc + item.price, 0);
   }, [items]);
@@ -37,8 +48,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ items, onOpenCamera, onDel
             </h1>
             <p className="text-gray-400 text-sm">Track your findings</p>
           </div>
-          <div className="h-10 w-10 rounded-full bg-secondary border border-white/10 flex items-center justify-center">
-             <span className="font-bold text-accent">AI</span>
+          <div className="flex items-center gap-3">
+             <div className="relative group max-w-[140px]">
+                <select 
+                  value={preferredCurrency}
+                  onChange={(e) => onCurrencyChange(e.target.value)}
+                  className="w-full appearance-none bg-secondary border border-white/10 text-white text-sm rounded-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-accent/50 cursor-pointer truncate"
+                >
+                  {CURRENCIES.map(c => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} ({c.symbol})
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                  <Settings className="w-3 h-3" />
+                </div>
+             </div>
+             <div className="h-10 w-10 rounded-full bg-secondary border border-white/10 flex items-center justify-center shrink-0">
+                <span className="font-bold text-accent">AI</span>
+             </div>
           </div>
         </div>
 
@@ -49,7 +78,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ items, onOpenCamera, onDel
           <div className="flex justify-between items-start relative z-10">
             <div>
               <p className="text-gray-400 text-sm font-medium mb-1">Total Tracked Value</p>
-              <h2 className="text-4xl font-bold text-white">${totalValue.toFixed(2)}</h2>
+              <h2 className="text-4xl font-bold text-white">
+                {currentCurrency.symbol}{totalValue.toFixed(2)}
+              </h2>
             </div>
             <div className="p-3 bg-accent/10 rounded-xl">
               <TrendingUp className="text-accent w-6 h-6" />

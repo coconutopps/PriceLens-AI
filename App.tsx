@@ -5,38 +5,74 @@ import { AnalysisView } from './components/AnalysisView';
 import { ResultModal } from './components/ResultModal';
 import { analyzeImage } from './services/geminiService';
 import { TrackedProduct, ViewState, AnalysisResult } from './types';
+import { CURRENCIES, getCurrencyByCode } from './data/currencies';
 
 const STORAGE_KEY = 'pricelens_items_v1';
+const PREFS_KEY = 'pricelens_prefs_v1';
 
 const App: React.FC = () => {
   const [viewState, setViewState] = useState<ViewState>(ViewState.DASHBOARD);
   const [items, setItems] = useState<TrackedProduct[]>([]);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  
+  // Store the preferred Currency CODE (e.g. 'USD'), not symbol
+  const [preferredCurrency, setPreferredCurrency] = useState<string>('USD');
 
-  // Load items from local storage on mount
+  // Load items and prefs from local storage on mount
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
+    const savedItems = localStorage.getItem(STORAGE_KEY);
+    const savedPrefs = localStorage.getItem(PREFS_KEY);
+    
+    if (savedItems) {
       try {
-        setItems(JSON.parse(saved));
+        setItems(JSON.parse(savedItems));
       } catch (e) {
         console.error("Failed to parse saved items", e);
       }
     }
+
+    if (savedPrefs) {
+      try {
+        const prefs = JSON.parse(savedPrefs);
+        // Basic migration: if old pref was a symbol like '$', default to USD, otherwise use the code
+        if (prefs.currency) {
+            if (prefs.currency.length === 1) {
+                // simple heuristic for migration
+                if(prefs.currency === '$') setPreferredCurrency('USD');
+                else if(prefs.currency === '€') setPreferredCurrency('EUR');
+                else if(prefs.currency === '£') setPreferredCurrency('GBP');
+                else setPreferredCurrency('USD');
+            } else {
+                setPreferredCurrency(prefs.currency);
+            }
+        }
+      } catch (e) {
+        console.error("Failed to parse saved prefs", e);
+      }
+    }
   }, []);
 
-  // Save items to local storage whenever they change
+  // Save items to local storage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
+
+  // Save prefs to local storage
+  useEffect(() => {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ currency: preferredCurrency }));
+  }, [preferredCurrency]);
 
   const handleCapture = async (imageData: string) => {
     setCurrentImage(imageData);
     setViewState(ViewState.ANALYZING);
 
     try {
-      const result = await analyzeImage(imageData);
+      // Resolve the actual symbol from the preferred code
+      const currencyObj = getCurrencyByCode(preferredCurrency);
+      const hint = currencyObj ? currencyObj.symbol : '$';
+      
+      const result = await analyzeImage(imageData, hint);
       setAnalysisResult(result);
       setViewState(ViewState.RESULT);
     } catch (error) {
@@ -46,15 +82,15 @@ const App: React.FC = () => {
     }
   };
 
-  const handleConfirmSave = () => {
-    if (analysisResult && currentImage) {
+  const handleConfirmSave = (finalResult: AnalysisResult) => {
+    if (currentImage) {
       const newItem: TrackedProduct = {
         id: crypto.randomUUID(),
-        name: analysisResult.productName,
-        price: analysisResult.price,
-        currency: analysisResult.currency,
-        category: analysisResult.category,
-        confidence: analysisResult.confidenceScore,
+        name: finalResult.productName,
+        price: finalResult.price,
+        currency: finalResult.currency,
+        category: finalResult.category,
+        confidence: finalResult.confidenceScore,
         scannedAt: new Date().toISOString(),
         imageBase64: currentImage
       };
@@ -86,6 +122,8 @@ const App: React.FC = () => {
           items={items} 
           onOpenCamera={() => setViewState(ViewState.CAMERA)} 
           onDeleteItem={handleDeleteItem}
+          preferredCurrency={preferredCurrency}
+          onCurrencyChange={setPreferredCurrency}
         />
       )}
 
