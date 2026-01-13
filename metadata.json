@@ -1,0 +1,7 @@
+{
+  "name": "PriceLens AI",
+  "description": "Smart price tracking application using camera and Gemini Vision to identify products, extract prices, and log history.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
